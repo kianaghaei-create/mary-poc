@@ -1,15 +1,7 @@
-# Secrets
 .env
 openai_key.txt
-
-# ChromaDB (byggs om automatiskt på Streamlit Cloud)
-rag_data/chroma_db/
-
-# Python
 __pycache__/
 *.pyc
-*.pyo
 .DS_Store
-
-# Streamlit cache
-.streamlit/cache/
+~$*
+rag_data/chroma_db/
