@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MARY – Min Resa & Metodstöd</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f1ec; color: #2c2c2c; min-height: 100vh; }
+
+    /* TOP BAR */
+    .topbar {
+      background: #2d5a4f;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+    }
+    .topbar .logo { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
+    .topbar .logo span { color: #a8d5c2; }
+    .view-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.15);
+      border-radius: 30px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .view-toggle button {
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      padding: 7px 20px;
+      border-radius: 26px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .view-toggle button.active {
+      background: white;
+      color: #2d5a4f;
+    }
+
+    /* VIEWS */
+    .view { display: none; padding: 28px; max-width: 960px; margin: 0 auto; }
+    .view.active { display: block; }
+
+    /* GREETING */
+    .greeting { margin-bottom: 24px; }
+    .greeting h1 { font-size: 1.6rem; color: #2d5a4f; }
+    .greeting p { color: #666; margin-top: 4px; font-size: 0.95rem; }
+
+    /* CARDS GRID */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .card h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
+
+    /* BIP INDICATORS */
+    .bip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .bip-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f1ec;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      color: #444;
+    }
+    .bip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: #4caf7d; }
+    .dot-yellow { background: #f5c842; }
+    .dot-red { background: #e05c5c; }
+    .dot-gray { background: #ccc; }
+
+    /* TIMELINE */
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: #e0dbd2; }
+    .timeline-item { position: relative; margin-bottom: 16px; }
+    .timeline-item::before {
+      content: ''; position: absolute; left: -19px; top: 5px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #2d5a4f; border: 2px solid white; box-shadow: 0 0 0 2px #2d5a4f;
+    }
+    .timeline-item .date { font-size: 0.72rem; color: #aaa; margin-bottom: 2px; }
+    .timeline-item .entry { font-size: 0.88rem; color: #444; background: #f9f7f4; border-radius: 8px; padding: 8px 12px; }
+    .timeline-item .entry strong { color: #2d5a4f; }
+
+    /* REFLECTION FORM */
+    .reflection-form { display: flex; flex-direction: column; gap: 16px; }
+    .q-block label { display: block; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 6px; }
+    .q-block label .q-num { color: #2d5a4f; margin-right: 6px; }
+    .q-block textarea, .q-block select {
+      width: 100%; border: 1.5px solid #ddd; border-radius: 10px;
+      padding: 10px 12px; font-size: 0.88rem; color: #333;
+      resize: vertical; min-height: 70px;
+      transition: border 0.2s;
+      font-family: inherit;
+      background: #fafafa;
+    }
+    .q-block textarea:focus, .q-block select:focus { border-color: #2d5a4f; outline: none; background: white; }
+    .q-block select { min-height: unset; height: 42px; }
+    .slider-wrap { display: flex; align-items: center; gap: 12px; }
+    .slider-wrap input[type=range] { flex: 1; accent-color: #2d5a4f; }
+    .slider-val {
+      background: #2d5a4f; color: white;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .submit-btn {
+      background: #2d5a4f; color: white; border: none;
+      padding: 13px 28px; border-radius: 30px; font-size: 1rem;
+      font-weight: 600; cursor: pointer; align-self: flex-start;
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: #224439; }
+
+    /* MMM */
+    .mmm-section { background: linear-gradient(135deg, #e8f5ee, #d4ede1); border-radius: 16px; padding: 22px; }
+    .mmm-section h2 { color: #1e4037; font-size: 1.1rem; margin-bottom: 6px; }
+    .mmm-section p { font-size: 0.88rem; color: #3a5c4e; margin-bottom: 14px; }
+    .mmm-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mmm-tag {
+      background: white; border: 1.5px solid #4caf7d;
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 0.82rem; color: #2d5a4f; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mmm-tag.selected, .mmm-tag:hover { background: #2d5a4f; color: white; border-color: #2d5a4f; }
+
+    /* PROGRESS BARS */
+    .prog-list { display: flex; flex-direction: column; gap: 10px; }
+    .prog-item label { font-size: 0.82rem; color: #555; display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .prog-bar { height: 8px; background: #e8e4dc; border-radius: 10px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 10px; transition: width 0.6s ease; }
+
+    /* ===== HANDLEDARVY ===== */
+    .h-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .h-header h1 { font-size: 1.4rem; color: #2d5a4f; }
+    .h-header .badge { background: #e05c5c; color: white; border-radius: 20px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; }
+
+    .participant-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .participant-row {
+      background: white; border-radius: 14px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.05); cursor: pointer;
+      border: 2px solid transparent; transition: border 0.2s;
+    }
+    .participant-row:hover, .participant-row.selected { border-color: #2d5a4f; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;
+    }
+    .participant-row .info { flex: 1; }
+    .participant-row .info .name { font-weight: 600; color: #2c2c2c; font-size: 0.95rem; }
+    .participant-row .info .sub { font-size: 0.78rem; color: #999; margin-top: 2px; }
+    .flag { font-size: 0.75rem; border-radius: 12px; padding: 3px 10px; font-weight: 600; }
+    .flag-red { background: #fde8e8; color: #c0392b; }
+    .flag-yellow { background: #fef9e7; color: #b7950b; }
+    .flag-green { background: #eafaf1; color: #1e8449; }
+
+    /* AI PANEL */
+    .ai-panel { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .ai-panel h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 14px; }
+    .ai-insight {
+      background: linear-gradient(135deg, #f0f7ff, #e8f0fe);
+      border-left: 4px solid #4a90d9;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .ai-insight .ai-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #4a90d9; margin-bottom: 4px; }
+    .ai-insight p { font-size: 0.87rem; color: #333; line-height: 1.5; }
+    .ai-source { font-size: 0.72rem; color: #aaa; margin-top: 6px; }
+    .ai-source span { background: #eee; border-radius: 4px; padding: 1px 6px; font-family: monospace; }
+
+    .warning-box {
+      background: #fff8e1; border: 1.5px solid #f5c842;
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;
+      font-size: 0.85rem; color: #7d6608;
+    }
+    .warning-box strong { display: block; margin-bottom: 3px; }
+
+    .next-steps { margin-top: 16px; }
+    .next-steps h4 { font-size: 0.82rem; color: #555; margin-bottom: 8px; font-weight: 600; }
+    .step-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #f0ede8; font-size: 0.85rem; color: #444;
+    }
+    .step-item:last-child { border: none; }
+    .step-num {
+      background: #2d5a4f; color: white;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+
+    .participant-answers { background: #f9f7f4; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .participant-answers h4 { font-size: 0.8rem; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .answer-item { margin-bottom: 10px; }
+    .answer-item .aq { font-size: 0.78rem; color: #999; margin-bottom: 2px; }
+    .answer-item .av { font-size: 0.88rem; color: #333; }
+
+    /* SECTION TITLE */
+    .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 12px; margin-top: 6px; }
+
+    /* ===== METODSTÖD RAG ===== */
+    .rag-wrap { max-width: 780px; }
+    .rag-intro { background: linear-gradient(135deg, #2d5a4f, #3a7a6a); color: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+    .rag-intro h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .rag-intro p { font-size: 0.88rem; opacity: 0.85; line-height: 1.5; }
+    .rag-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .rag-example-btn {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      color: white; border-radius: 20px; padding: 6px 14px;
+      font-size: 0.78rem; cursor: pointer; transition: background 0.15s;
+    }
+    .rag-example-btn:hover { background: rgba(255,255,255,0.25); }
+
+    .rag-inputbox { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+    .rag-inputbox label { display: block; font-size: 0.82rem; font-weight: 600; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    #rag-input {
+      width: 100%; border: 1.5px solid #ddd; border-radius: 10px;
+      padding: 12px 14px; font-size: 0.92rem; color: #333;
+      resize: vertical; min-height: 90px; font-family: inherit;
+      transition: border 0.2s; background: #fafafa;
+    }
+    #rag-input:focus { border-color: #2d5a4f; outline: none; background: white; }
+    .rag-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+    #rag-btn {
+      background: #2d5a4f; color: white; border: none;
+      padding: 11px 24px; border-radius: 30px; font-size: 0.92rem;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    #rag-btn:hover:not(:disabled) { background: #224439; }
+    #rag-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .rag-hint { font-size: 0.75rem; color: #aaa; }
+
+    /* Loading dots */
+    .rag-loading { display: flex; gap: 6px; padding: 20px; justify-content: center; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #2d5a4f; animation: bounce 1.2s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-10px)} }
+
+    /* RAG output */
+    .rag-answer { background: white; border-radius: 14px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .rag-answer-text { font-size: 0.9rem; line-height: 1.7; color: #333; white-space: pre-line; }
+    .rag-sources { background: #f4f1ec; border-radius: 12px; padding: 16px; }
+    .rag-sources-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 10px; }
+    .src-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #e8e4dc; }
+    .src-item:last-child { border: none; }
+    .src-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .src-title { font-size: 0.84rem; font-weight: 600; color: #333; }
+    .src-url { font-size: 0.72rem; color: #aaa; margin-top: 2px; font-family: monospace; word-break: break-all; }
+    .rag-error { background: #fde8e8; border-radius: 10px; padding: 14px; font-size: 0.87rem; color: #c0392b; }
+
+    @media (max-width: 600px) {
+      .view { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">MARY <span>·</span> Min Resa</div>
+  <div class="view-toggle">
+    <button class="active" onclick="showView('deltagare', this)">Deltagare</button>
+    <button onclick="showView('handledare', this)">Handledare</button>
+    <button onclick="showView('metodstod', this)">Metodstöd AI</button>
+  </div>
+</div>
+
+<!-- ========== DELTAGARVY ========== -->
+<div id="view-deltagare" class="view active">
+  <div class="greeting">
+    <h1>Hej, Sara 👋</h1>
+    <p>Vecka 12 — du har loggat 6 veckor i rad. Bra jobbat!</p>
+  </div>
+
+  <div class="cards">
+    <!-- PROGRESSION -->
+    <div class="card">
+      <h3>Din progression</h3>
+      <div class="prog-list">
+        <div class="prog-item">
+          <label><span>Arbetsgemenskap</span><span>72%</span></label>
+          <div class="prog-bar"><div class="prog-fill" style="width:72%;background:#4caf7d"></div></div>
+        </div>
+        <div class="prog-item">
+          <label><span>Meningsfullhet</span><span>58%</span></label>
+          <div class="prog-bar"><div class="prog-fill" style="width:58%;background:#4a90d9"></div></div>
+        </div>
+        <div class="prog-item">
+          <label><span>Vardagsstruktur</span><span>45%</span></label>
+          <div class="prog-bar"><div class="prog-fill" style="width:45%;background:#f5c842"></div></div>
+        </div>
+        <div class="prog-item">
+          <label><span>Framtidstro</span><span>63%</span></label>
+          <div class="prog-bar"><div class="prog-fill" style="width:63%;background:#9b59b6"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIP -->
+    <div class="card">
+      <h3>Dina BIP-steg</h3>
+      <div class="bip-grid">
+        <div class="bip-item"><div class="bip-dot dot-green"></div>Socialt nätverk</div>
+        <div class="bip-item"><div class="bip-dot dot-green"></div>Daglig aktivitet</div>
+        <div class="bip-item"><div class="bip-dot dot-yellow"></div>Arbetsförmåga</div>
+        <div class="bip-item"><div class="bip-dot dot-yellow"></div>Motivation</div>
+        <div class="bip-item"><div class="bip-dot dot-red"></div>Egenförsörjning</div>
+        <div class="bip-item"><div class="bip-dot dot-gray"></div>Utbildning</div>
+        <div class="bip-item"><div class="bip-dot dot-green"></div>Hälsa</div>
+      </div>
+      <p style="font-size:0.72rem;color:#aaa;margin-top:12px">🟢 På gång &nbsp;🟡 Pågående &nbsp;🔴 Behöver fokus &nbsp;⚪ Ej startat</p>
+    </div>
+  </div>
+
+  <!-- TIDSLINJE -->
+  <div class="section-title">Din resa</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="date">Vecka 12 — idag</div>
+        <div class="entry">Var på kyrkans kafé med en vän. Kändes lättare att prata med folk. 😊</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">Vecka 11</div>
+        <div class="entry">Provade på <strong>trädgårdsgruppen</strong>. Kom inte dit men ringde och förklarade varför.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">Vecka 10</div>
+        <div class="entry">Energinivå låg hela veckan. Pratade med handledaren om schema.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="date">Vecka 9</div>
+        <div class="entry"><strong>Första mötet</strong> med gruppen. Nervös men glad efteråt.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VECKANS REFLEKTION -->
+  <div class="section-title">Veckans reflektion</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="reflection-form">
+      <div class="q-block">
+        <label><span class="q-num">1.</span> Vad är du mest nöjd med den här veckan?</label>
+        <textarea placeholder="Skriv fritt — det finns inga rätt eller fel svar..."></textarea>
+      </div>
+      <div class="q-block">
+        <label><span class="q-num">2.</span> Hur kändes ditt deltagande i aktiviteter?</label>
+        <select>
+          <option value="">Välj ett alternativ...</option>
+          <option>Deltog och kände mig trygg</option>
+          <option>Deltog men kändes svårt</option>
+          <option>Deltog inte — hade ett skäl</option>
+          <option>Deltog inte — vet inte varför</option>
+        </select>
+      </div>
+      <div class="q-block">
+        <label><span class="q-num">3.</span> Hur är din energinivå just nu?</label>
+        <div class="slider-wrap">
+          <span>😔</span>
+          <input type="range" min="1" max="10" value="6" oninput="document.getElementById('ev').textContent=this.value">
+          <span>😄</span>
+          <div class="slider-val" id="ev">6</div>
+        </div>
+      </div>
+      <div class="q-block">
+        <label><span class="q-num">4.</span> Finns det något du vill prata med din handledare om?</label>
+        <textarea placeholder="Valfritt — skrivs direkt till handledaren..."></textarea>
+      </div>
+      <button class="submit-btn" onclick="alert('Tack! Din reflektion för vecka 12 är sparad. 🌱')">Spara veckans reflektion</button>
+    </div>
+  </div>
+
+  <!-- MMM -->
+  <div class="mmm-section">
+    <h2>🌟 Meningen med mig</h2>
+    <p>Vad ger dig energi just nu? Välj det som stämmer — du kan ändra närsomhelst.</p>
+    <div class="mmm-tags">
+      <div class="mmm-tag selected" onclick="this.classList.toggle('selected')">Vara med andra</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Skapa något</div>
+      <div class="mmm-tag selected" onclick="this.classList.toggle('selected')">Hjälpa till</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Lära mig nytt</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Komma ut i naturen</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Ha ett schema</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Känna mig behövd</div>
+      <div class="mmm-tag" onclick="this.classList.toggle('selected')">Jobba med djur</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== METODSTÖD RAG ========== -->
+<div id="view-metodstod" class="view">
+  <div class="rag-wrap">
+    <div class="rag-intro">
+      <h2>🤖 Metodstöd – Fråga MARY-materialet</h2>
+      <p>Ställ en fråga om MARY-metoden. Svaret hämtas från 23 källor — lokala dokument och officiella webbsidor. Varje svar kommer med källhänvisning.</p>
+      <div class="rag-examples">
+        <button class="rag-example-btn" onclick="useExample('Jag har en deltagare som har tappat motivationen. Vilket nästa steg i Mary-metoden föreslår du?')">Tappat motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka delar i materialet kan användas för en trygg start de första 2 veckorna?')">Trygg start</button>
+        <button class="rag-example-btn" onclick="useExample('Vad är kärnan i Mary-metoden? Sammanfatta i punkter.')">Metodkärnan</button>
+        <button class="rag-example-btn" onclick="useExample('Hur kopplas MMM – Meningen med Mig – till motivation och vardagsprogression?')">MMM & motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka 11 BIP-indikatorer nämns i materialet och var?')">BIP-indikatorer</button>
+      </div>
+    </div>
+
+    <div class="rag-inputbox">
+      <label>Din fråga till materialet</label>
+      <textarea id="rag-input" placeholder="T.ex. 'Hur anpassar vi upplägget för en deltagare som ofta uteblir?' ..."></textarea>
+      <div class="rag-actions">
+        <button id="rag-btn" onclick="askRAG()">Fråga MARY-metoden</button>
+        <span class="rag-hint">Ctrl+Enter för att skicka</span>
+      </div>
+    </div>
+
+    <div id="rag-output"></div>
+  </div>
+</div>
+
+<!-- ========== HANDLEDARVY ========== -->
+<div id="view-handledare" class="view">
+  <div class="h-header">
+    <div>
+      <h1>Mina deltagare</h1>
+      <p style="color:#999;font-size:0.85rem;margin-top:3px">3 reflektioner inkomna denna vecka</p>
+    </div>
+    <div class="badge">2 behöver uppmärksamhet</div>
+  </div>
+
+  <div class="participant-list">
+    <div class="participant-row selected" onclick="showParticipant(this, 'sara')">
+      <div class="avatar" style="background:#2d5a4f">SA</div>
+      <div class="info">
+        <div class="name">Sara Andersson</div>
+        <div class="sub">Vecka 12 inlämnad · Aktiv 6 veckor</div>
+      </div>
+      <span class="flag flag-yellow">Följ upp</span>
+    </div>
+    <div class="participant-row" onclick="showParticipant(this, 'mikael')">
+      <div class="avatar" style="background:#4a90d9">MK</div>
+      <div class="info">
+        <div class="name">Mikael Karlsson</div>
+        <div class="sub">Vecka 12 inlämnad · Aktiv 3 veckor</div>
+      </div>
+      <span class="flag flag-red">Behöver kontakt</span>
+    </div>
+    <div class="participant-row" onclick="showParticipant(this, 'fatima')">
+      <div class="avatar" style="background:#9b59b6">FH</div>
+      <div class="info">
+        <div class="name">Fatima Hassan</div>
+        <div class="sub">Vecka 11 inlämnad · Aktiv 11 veckor</div>
+      </div>
+      <span class="flag flag-green">På god väg</span>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="panel-sara" class="ai-panel">
+    <h3>Sara Andersson — Vecka 12</h3>
+
+    <div class="participant-answers">
+      <h4>Saras svar denna vecka</h4>
+      <div class="answer-item">
+        <div class="aq">Vad är du mest nöjd med?</div>
+        <div class="av">"Var på kyrkans kafé med en vän. Kändes lättare att prata med folk."</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Deltagande i aktiviteter</div>
+        <div class="av">Deltog och kände mig trygg</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Energinivå</div>
+        <div class="av">6 / 10</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Till handledaren</div>
+        <div class="av">"Undrar om det finns något mer jag kan göra i gruppen."</div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <strong>⚠️ Observera</strong>
+      Vardagsstruktur (45%) har inte förbättrats på 3 veckor. Sara anger hög social trygghet men låg struktur — en vanlig kombination som kan plana ut utan tydligt nästa steg.
+    </div>
+
+    <div class="ai-insight">
+      <div class="ai-label">🤖 AI-tolkning utifrån MARY-metoden</div>
+      <p>Sara visar tydliga tecken på ökad <strong>social trygghet</strong> (BIP: Socialt nätverk) och börjar ta egna initiativ — frågan om mer ansvar i gruppen är ett positivt tecken på <strong>yrkesstolthet och meningsfullhet</strong>. Enligt MARY-metoden är detta ett bra läge att introducera ett konkret, avgränsat uppdrag.</p>
+      <div class="ai-source">Källa: <span>MARY_metodbeskrivning.pdf s.14</span> · <span>BIP-indikator-guide.docx</span></div>
+    </div>
+
+    <div class="next-steps">
+      <h4>Föreslagna nästa steg i kommande samtal</h4>
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <span>Bekräfta Saras initiativ — fråga konkret vad hon tänker sig för roll i gruppen.</span>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <span>Utforska vardagsstrukturen: vad hindrar rutiner trots hög social energi?</span>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <span>Koppla Saras MMM-värden (Hjälpa till, Vara med andra) till ett konkret nästa steg inom gruppen.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-mikael" class="ai-panel" style="display:none">
+    <h3>Mikael Karlsson — Vecka 12</h3>
+    <div class="participant-answers">
+      <h4>Mikaels svar denna vecka</h4>
+      <div class="answer-item">
+        <div class="aq">Vad är du mest nöjd med?</div>
+        <div class="av">"Vet inte riktigt. Det har inte hänt så mycket."</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Deltagande i aktiviteter</div>
+        <div class="av">Deltog inte — vet inte varför</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Energinivå</div>
+        <div class="av">2 / 10</div>
+      </div>
+    </div>
+    <div class="warning-box">
+      <strong>⚠️ Behöver uppmärksamhet</strong>
+      Energinivå 2/10 kombinerat med uteblivet deltagande och vagt svar är en signal att ta på allvar. Tre veckor i rad med liknande mönster.
+    </div>
+    <div class="ai-insight">
+      <div class="ai-label">🤖 AI-tolkning utifrån MARY-metoden</div>
+      <p>Mikaels svar indikerar låg <strong>motivation och framtidstro</strong>. Enligt MARY-metoden är detta ett läge för ett <strong>enskilt samtal</strong> före nästa grupptillfälle — inte konfronterande, utan utforskande av hinder.</p>
+      <div class="ai-source">Källa: <span>MARY_metodbeskrivning.pdf s.8</span></div>
+    </div>
+    <div class="next-steps">
+      <h4>Föreslagna nästa steg</h4>
+      <div class="step-item"><div class="step-num">1</div><span>Ring Mikael innan nästa grupptillfälle — kort incheckning, inget krav.</span></div>
+      <div class="step-item"><div class="step-num">2</div><span>Utforska om det finns praktiska hinder (transport, ekonomi, hälsa) som inte syns i reflektionen.</span></div>
+      <div class="step-item"><div class="step-num">3</div><span>Överväg om samverkan med socialtjänst/hälsa är aktuellt — dokumentera bedömningen.</span></div>
+    </div>
+  </div>
+
+  <div id="panel-fatima" class="ai-panel" style="display:none">
+    <h3>Fatima Hassan — Vecka 11</h3>
+    <div class="participant-answers">
+      <h4>Fatimas svar denna vecka</h4>
+      <div class="answer-item">
+        <div class="aq">Vad är du mest nöjd med?</div>
+        <div class="av">"Hjälpte till att planera kyrkans matutdelning. Kände mig verkligen behövd."</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Deltagande i aktiviteter</div>
+        <div class="av">Deltog och kände mig trygg</div>
+      </div>
+      <div class="answer-item">
+        <div class="aq">Energinivå</div>
+        <div class="av">8 / 10</div>
+      </div>
+    </div>
+    <div class="ai-insight">
+      <div class="ai-label">🤖 AI-tolkning utifrån MARY-metoden</div>
+      <p>Fatima befinner sig i en stark <strong>aktiveringsfas</strong>. Hon tar ansvar, bidrar och upplever meningsfullhet — alla tre är nyckelindikatorer inför nästa steg mot arbetsmarknaden. Läge att diskutera konkreta vägar vidare.</p>
+      <div class="ai-source">Källa: <span>MARY_metodbeskrivning.pdf s.19</span> · <span>BIP-indikator-guide.docx</span></div>
+    </div>
+    <div class="next-steps">
+      <h4>Föreslagna nästa steg</h4>
+      <div class="step-item"><div class="step-num">1</div><span>Introducera begreppet "nästa steg" — är Fatima redo att prata om praktik eller sysselsättning?</span></div>
+      <div class="step-item"><div class="step-num">2</div><span>Dokumentera framgångsmönstret — vad specifikt gav energi? (Kan användas i framtida CV-samtal)</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+function showView(view, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  btn.classList.add('active');
+}
+function showParticipant(row, id) {
+  document.querySelectorAll('.participant-row').forEach(r => r.classList.remove('selected'));
+  document.querySelectorAll('[id^="panel-"]').forEach(p => p.style.display = 'none');
+  row.classList.add('selected');
+  document.getElementById('panel-' + id).style.display = 'block';
+}
+
+function useExample(text) {
+  document.getElementById('rag-input').value = text;
+  document.getElementById('rag-input').focus();
+}
+
+async function askRAG() {
+  const q = document.getElementById('rag-input').value.trim();
+  if (!q) return;
+
+  const btn = document.getElementById('rag-btn');
+  const output = document.getElementById('rag-output');
+  btn.disabled = true;
+  btn.textContent = 'Söker i materialet...';
+  output.innerHTML = '<div class="rag-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+
+  try {
+    const res = await fetch(`${API}/query`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q, top_k: 6})
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    // Format sources
+    const srcHtml = data.sources.map(s => `
+      <div class="src-item">
+        <div class="src-icon">${s.type.includes('pdf') ? '📄' : s.type === 'web' ? '🌐' : '📝'}</div>
+        <div>
+          <div class="src-title">${s.title}</div>
+          <div class="src-url">${s.source}</div>
+        </div>
+      </div>`).join('');
+
+    output.innerHTML = `
+      <div class="rag-answer">
+        <div class="rag-answer-text">${data.answer.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="rag-sources">
+        <div class="rag-sources-label">📚 Källor (${data.sources.length} dokument · ${data.chunks_used} textavsnitt analyserade)</div>
+        ${srcHtml}
+      </div>`;
+  } catch(e) {
+    output.innerHTML = `<div class="rag-error">⚠️ Kunde inte nå API:et. Är servern igång på port 8000?<br><small>${e.message}</small></div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Fråga MARY-metoden';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey && document.getElementById('rag-input') === document.activeElement) {
+    askRAG();
+  }
+});
+</script>
+</body>
+</html>
