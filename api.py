@@ -38,9 +38,32 @@ def root():
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 # Initiera klienter
-chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
-collection = chroma_client.get_collection("mary_rag")
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+def build_collection():
+    """Bygg in-memory ChromaDB från chunks.json vid uppstart."""
+    import json
+    chunks_path = Path("rag_data/chunks.json")
+    client = chromadb.Client()  # in-memory, fungerar på Railway/cloud
+    try:
+        client.delete_collection("mary_rag")
+    except Exception:
+        pass
+    col = client.create_collection("mary_rag", metadata={"hnsw:space": "cosine"})
+    with open(chunks_path, encoding="utf-8") as f:
+        chunks = json.load(f)
+    batch = 100
+    for i in range(0, len(chunks), batch):
+        b = chunks[i:i + batch]
+        col.add(
+            documents=[c["text"] for c in b],
+            metadatas=[{"source": c["source"], "title": c["title"], "type": c["type"]} for c in b],
+            ids=[f"c_{i+j}" for j in range(len(b))]
+        )
+    print(f"✅ ChromaDB byggd: {col.count()} chunks")
+    return col
+
+collection = build_collection()
 
 SYSTEM_PROMPT = """Du är ett AI-stöd för handledare och medarbetare som arbetar med MARY-metoden inom Svenska kyrkan.
 
