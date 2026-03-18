@@ -277,6 +277,7 @@
   <div class="view-toggle">
     <button class="active" onclick="showView('deltagare', this)">Deltagare</button>
     <button onclick="showView('handledare', this)">Handledare</button>
+    <button onclick="showView('metodstod', this)">Metodstöd AI</button>
   </div>
 </div>
 
@@ -399,6 +400,34 @@
       <div class="mmm-tag" onclick="this.classList.toggle('selected')">Känna mig behövd</div>
       <div class="mmm-tag" onclick="this.classList.toggle('selected')">Jobba med djur</div>
     </div>
+  </div>
+</div>
+
+<!-- ========== METODSTÖD RAG ========== -->
+<div id="view-metodstod" class="view">
+  <div class="rag-wrap">
+    <div class="rag-intro">
+      <h2>🤖 Metodstöd – Fråga MARY-materialet</h2>
+      <p>Ställ en fråga om MARY-metoden. Svaret hämtas från 23 källor — lokala dokument och officiella webbsidor. Varje svar kommer med källhänvisning.</p>
+      <div class="rag-examples">
+        <button class="rag-example-btn" onclick="useExample('Jag har en deltagare som har tappat motivationen. Vilket nästa steg i Mary-metoden föreslår du?')">Tappat motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka delar i materialet kan användas för en trygg start de första 2 veckorna?')">Trygg start</button>
+        <button class="rag-example-btn" onclick="useExample('Vad är kärnan i Mary-metoden? Sammanfatta i punkter.')">Metodkärnan</button>
+        <button class="rag-example-btn" onclick="useExample('Hur kopplas MMM – Meningen med Mig – till motivation och vardagsprogression?')">MMM & motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka 11 BIP-indikatorer nämns i materialet och var?')">BIP-indikatorer</button>
+      </div>
+    </div>
+
+    <div class="rag-inputbox">
+      <label>Din fråga till materialet</label>
+      <textarea id="rag-input" placeholder="T.ex. 'Hur anpassar vi upplägget för en deltagare som ofta uteblir?' ..."></textarea>
+      <div class="rag-actions">
+        <button id="rag-btn" onclick="askRAG()">Fråga MARY-metoden</button>
+        <span class="rag-hint">Ctrl+Enter för att skicka</span>
+      </div>
+    </div>
+
+    <div id="rag-output"></div>
   </div>
 </div>
 
@@ -556,6 +585,8 @@
 </div>
 
 <script>
+const API = 'http://localhost:8000';
+
 function showView(view, btn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
@@ -569,6 +600,61 @@ function showParticipant(row, id) {
   document.getElementById('panel-' + id).style.display = 'block';
 }
 
+function useExample(text) {
+  document.getElementById('rag-input').value = text;
+  document.getElementById('rag-input').focus();
+}
+
+async function askRAG() {
+  const q = document.getElementById('rag-input').value.trim();
+  if (!q) return;
+
+  const btn = document.getElementById('rag-btn');
+  const output = document.getElementById('rag-output');
+  btn.disabled = true;
+  btn.textContent = 'Söker i materialet...';
+  output.innerHTML = '<div class="rag-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+
+  try {
+    const res = await fetch(`${API}/query`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q, top_k: 6})
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    // Format sources
+    const srcHtml = data.sources.map(s => `
+      <div class="src-item">
+        <div class="src-icon">${s.type.includes('pdf') ? '📄' : s.type === 'web' ? '🌐' : '📝'}</div>
+        <div>
+          <div class="src-title">${s.title}</div>
+          <div class="src-url">${s.source}</div>
+        </div>
+      </div>`).join('');
+
+    output.innerHTML = `
+      <div class="rag-answer">
+        <div class="rag-answer-text">${data.answer.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="rag-sources">
+        <div class="rag-sources-label">📚 Källor (${data.sources.length} dokument · ${data.chunks_used} textavsnitt analyserade)</div>
+        ${srcHtml}
+      </div>`;
+  } catch(e) {
+    output.innerHTML = `<div class="rag-error">⚠️ Kunde inte nå API:et. Är servern igång på port 8000?<br><small>${e.message}</small></div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Fråga MARY-metoden';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey && document.getElementById('rag-input') === document.activeElement) {
+    askRAG();
+  }
+});
 </script>
 </body>
 </html>
