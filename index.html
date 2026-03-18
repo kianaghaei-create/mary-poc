@@ -406,23 +406,28 @@
 <!-- ========== METODSTÖD RAG ========== -->
 <div id="view-metodstod" class="view">
   <div class="rag-wrap">
-    <div style="
-      background: linear-gradient(135deg, #2d5a4f, #3a7a6a);
-      color: white; border-radius: 20px; padding: 48px 40px;
-      text-align: center; max-width: 560px; margin: 60px auto;">
-      <div style="font-size: 3rem; margin-bottom: 16px;">🤖</div>
-      <h2 style="font-size: 1.4rem; margin-bottom: 12px;">Metodstöd AI</h2>
-      <p style="opacity: 0.85; line-height: 1.6; margin-bottom: 28px;">
-        Ställ frågor om MARY-metoden och få svar med källhänvisningar —
-        öppna fliken <strong>🤖 Metodstöd AI</strong> i navigeringen högst upp på sidan.
-      </p>
-      <div style="
-        background: rgba(255,255,255,0.15);
-        border-radius: 12px; padding: 14px 20px;
-        font-size: 0.85rem; opacity: 0.9;">
-        ☝️ Klicka på <strong>Metodstöd AI</strong> i det gröna fältet ovanför dashboarden
+    <div class="rag-intro">
+      <h2>🤖 Metodstöd – Fråga MARY-materialet</h2>
+      <p>Ställ en fråga om MARY-metoden. Svaret hämtas från 23 källor — lokala dokument och officiella webbsidor. Varje svar kommer med källhänvisning.</p>
+      <div class="rag-examples">
+        <button class="rag-example-btn" onclick="useExample('Jag har en deltagare som har tappat motivationen. Vilket nästa steg i Mary-metoden föreslår du?')">Tappat motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka delar i materialet kan användas för en trygg start de första 2 veckorna?')">Trygg start</button>
+        <button class="rag-example-btn" onclick="useExample('Vad är kärnan i Mary-metoden? Sammanfatta i punkter.')">Metodkärnan</button>
+        <button class="rag-example-btn" onclick="useExample('Hur kopplas MMM – Meningen med Mig – till motivation och vardagsprogression?')">MMM & motivation</button>
+        <button class="rag-example-btn" onclick="useExample('Vilka 11 BIP-indikatorer nämns i materialet och var?')">BIP-indikatorer</button>
       </div>
     </div>
+
+    <div class="rag-inputbox">
+      <label>Din fråga till materialet</label>
+      <textarea id="rag-input" placeholder="T.ex. 'Hur anpassar vi upplägget för en deltagare som ofta uteblir?' ..."></textarea>
+      <div class="rag-actions">
+        <button id="rag-btn" onclick="askRAG()">Fråga MARY-metoden</button>
+        <span class="rag-hint">Ctrl+Enter för att skicka</span>
+      </div>
+    </div>
+
+    <div id="rag-output"></div>
   </div>
 </div>
 
