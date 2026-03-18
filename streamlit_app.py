@@ -4,6 +4,13 @@ import streamlit as st
 import chromadb
 from openai import OpenAI
 
+# ── Page config — MUST be first Streamlit call ────────────────────────────────
+st.set_page_config(
+    page_title="MARY – Min Resa & Metodstöd",
+    page_icon="🌿",
+    layout="wide",
+)
+
 # ── Start FastAPI in background thread so index.html can call localhost:8000 ──
 @st.cache_resource
 def start_api_server():
@@ -84,13 +91,6 @@ Svara ENBART baserat på det underlag du fått. Svara på svenska. Avsluta med [
     return True
 
 start_api_server()
-
-# ── Page config ──────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="MARY – Min Resa & Metodstöd",
-    page_icon="🌿",
-    layout="wide",
-)
 
 # ── Load OpenAI key ───────────────────────────────────────────────────────────
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
