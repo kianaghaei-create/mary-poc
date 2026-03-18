@@ -592,6 +592,12 @@ function showView(view, btn) {
   document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   btn.classList.add('active');
+  if (view === 'metodstod') wakeUp();
+}
+
+// Ping the API when metodstöd opens — starts Render cold-start early
+function wakeUp() {
+  fetch(`${API}/health`).catch(() => {});
 }
 function showParticipant(row, id) {
   document.querySelectorAll('.participant-row').forEach(r => r.classList.remove('selected'));
@@ -605,15 +611,18 @@ function useExample(text) {
   document.getElementById('rag-input').focus();
 }
 
-async function askRAG() {
+async function askRAG(isRetry) {
   const q = document.getElementById('rag-input').value.trim();
   if (!q) return;
 
   const btn = document.getElementById('rag-btn');
   const output = document.getElementById('rag-output');
   btn.disabled = true;
-  btn.textContent = 'Söker i materialet...';
-  output.innerHTML = '<div class="rag-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+
+  if (!isRetry) {
+    btn.textContent = 'Söker i materialet...';
+    output.innerHTML = '<div class="rag-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+  }
 
   try {
     const res = await fetch(`${API}/query`, {
@@ -621,7 +630,29 @@ async function askRAG() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({question: q, top_k: 6})
     });
-    if (!res.ok) throw new Error(await res.text());
+
+    if (res.status === 503) {
+      // Render Free tier cold start — show countdown and auto-retry
+      let secs = 40;
+      function countdown() {
+        if (secs > 0) {
+          output.innerHTML = `<div class="rag-error" style="background:#fff8e1;color:#7d6608;border:1.5px solid #f5c842;border-radius:10px;padding:14px">
+            ⏳ <strong>Tjänsten startar upp...</strong><br>
+            Render pausar servern vid inaktivitet. Försöker automatiskt om <strong>${secs}s</strong>.
+          </div>`;
+          secs--;
+          setTimeout(countdown, 1000);
+        } else {
+          btn.textContent = 'Söker i materialet...';
+          output.innerHTML = '<div class="rag-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+          askRAG(true);
+        }
+      }
+      countdown();
+      return;
+    }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     const data = await res.json();
 
     // Format sources
@@ -643,7 +674,7 @@ async function askRAG() {
         ${srcHtml}
       </div>`;
   } catch(e) {
-    output.innerHTML = `<div class="rag-error">⚠️ Kunde inte nå API:et. Är servern igång på port 8000?<br><small>${e.message}</small></div>`;
+    output.innerHTML = `<div class="rag-error">⚠️ Kunde inte nå MARY-tjänsten.<br><small>${e.message}</small></div>`;
   }
 
   btn.disabled = false;
@@ -655,6 +686,9 @@ document.addEventListener('keydown', e => {
     askRAG();
   }
 });
+
+// Ping the API on load so Render warm-up starts immediately
+wakeUp();
 </script>
 </body>
 </html>
