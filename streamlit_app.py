@@ -1,8 +1,89 @@
-import os, json
+import os, json, threading
 from pathlib import Path
 import streamlit as st
 import chromadb
 from openai import OpenAI
+
+# ── Start FastAPI in background thread so index.html can call localhost:8000 ──
+@st.cache_resource
+def start_api_server():
+    import uvicorn
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+
+    api = FastAPI()
+    api.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+    _col = None
+
+    def get_col():
+        nonlocal _col
+        if _col is None:
+            client = chromadb.Client()
+            try:
+                client.delete_collection("mary_api")
+            except Exception:
+                pass
+            col = client.create_collection("mary_api", metadata={"hnsw:space": "cosine"})
+            with open(Path("rag_data/chunks.json"), encoding="utf-8") as f:
+                chunks = json.load(f)
+            for i in range(0, len(chunks), 100):
+                b = chunks[i:i+100]
+                col.add(
+                    documents=[c["text"] for c in b],
+                    metadatas=[{"source": c["source"], "title": c["title"], "type": c["type"]} for c in b],
+                    ids=[f"a_{i+j}" for j in range(len(b))],
+                )
+            _col = col
+        return _col
+
+    class Q(BaseModel):
+        question: str
+        top_k: int = 6
+
+    SYSTEM = """Du är ett AI-stöd för handledare som arbetar med MARY-metoden inom Svenska kyrkan.
+Svara ENBART baserat på det underlag du fått. Svara på svenska. Avsluta med [Källa: titel]."""
+
+    @api.post("/query")
+    def query(req: Q):
+        col = get_col()
+        key = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
+        results = col.query(query_texts=[req.question], n_results=min(req.top_k, col.count()),
+                            include=["documents", "metadatas", "distances"])
+        docs, metas = results["documents"][0], results["metadatas"][0]
+        context = "\n---\n".join(
+            f"[Underlag {i+1}] Titel: {m['title']}\nKälla: {m['source']}\n\n{d}"
+            for i, (d, m) in enumerate(zip(docs, metas))
+        )
+        oai = OpenAI(api_key=key)
+        resp = oai.chat.completions.create(
+            model="gpt-4o", max_tokens=1200,
+            messages=[
+                {"role": "system", "content": SYSTEM},
+                {"role": "user", "content": f"Fråga: {req.question}\n\nUnderlag:\n{context}"},
+            ],
+        )
+        seen, sources = set(), []
+        for d, m in zip(docs, metas):
+            if m["source"] not in seen:
+                seen.add(m["source"])
+                sources.append({"title": m["title"], "source": m["source"],
+                                 "type": m["type"], "excerpt": d[:200]})
+        return {"answer": resp.choices[0].message.content, "sources": sources, "chunks_used": len(docs)}
+
+    @api.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    t = threading.Thread(
+        target=lambda: uvicorn.run(api, host="0.0.0.0", port=8000, log_level="error"),
+        daemon=True,
+    )
+    t.start()
+    return True
+
+start_api_server()
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
