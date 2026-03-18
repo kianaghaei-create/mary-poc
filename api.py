@@ -40,11 +40,19 @@ app.mount("/static", StaticFiles(directory="."), name="static")
 # Initiera klienter
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+def _openai_embed(texts: list[str]) -> list[list[float]]:
+    """Embed via OpenAI API — ingen lokal ONNX-modell behövs."""
+    resp = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts,
+    )
+    return [d.embedding for d in resp.data]
+
 def build_collection():
     """Bygg in-memory ChromaDB från chunks.json vid uppstart."""
     import json
     chunks_path = Path("rag_data/chunks.json")
-    client = chromadb.Client()  # in-memory, fungerar på Railway/cloud
+    client = chromadb.Client()  # in-memory
     try:
         client.delete_collection("mary_rag")
     except Exception:
@@ -52,11 +60,14 @@ def build_collection():
     col = client.create_collection("mary_rag", metadata={"hnsw:space": "cosine"})
     with open(chunks_path, encoding="utf-8") as f:
         chunks = json.load(f)
-    batch = 100
+    batch = 50
     for i in range(0, len(chunks), batch):
         b = chunks[i:i + batch]
+        texts = [c["text"] for c in b]
+        embeddings = _openai_embed(texts)
         col.add(
-            documents=[c["text"] for c in b],
+            documents=texts,
+            embeddings=embeddings,
             metadatas=[{"source": c["source"], "title": c["title"], "type": c["type"]} for c in b],
             ids=[f"c_{i+j}" for j in range(len(b))]
         )
@@ -108,8 +119,9 @@ def query(req: QueryRequest):
         raise HTTPException(400, "Frågan får inte vara tom.")
 
     # 1. Hämta relevanta chunks från ChromaDB
+    query_embedding = _openai_embed([req.question])[0]
     results = collection.query(
-        query_texts=[req.question],
+        query_embeddings=[query_embedding],
         n_results=min(req.top_k, collection.count()),
         include=["documents", "metadatas", "distances"]
     )
